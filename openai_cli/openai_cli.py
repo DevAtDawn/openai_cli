@@ -157,7 +157,9 @@ def get_args():
 def cli():
     default_dict = get_args()
     output = openai_api(**default_dict)
-    print(output, default_dict)
+    print(output)
+#     return output
+#     print(output, default_dict)
 
 
 if __name__ == "__main__":
