@@ -122,6 +122,11 @@ def get_args():
     if "-p" in args or "--prompt" in args or "--input" in args:
         prompt = args[args.index("-p") + 1]
         default_dict["prompt"] = prompt
+    elif "-f" in args or "--file" in args:
+        file_path = args[args.index("-f") + 1]
+        with open(file_path, "r") as f:
+            prompt = f.read()
+        default_dict["prompt"] = prompt
     else:
         prompt = args[1]
         default_dict["prompt"] = prompt
