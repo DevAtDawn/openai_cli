@@ -1,0 +1,164 @@
+import os
+import openai
+import sys
+
+# export OPENAI_API_KEY='xxx'
+
+
+def openai_api(**kwargs):
+
+    # if 'api_key' in kwargs and 'api_key' is not None:
+    #     openai.api_key = kwargs.get('api_key')
+    # else:
+    #     openai.api_key = os.getenv("OPENAI_API_KEY")
+
+    if not kwargs.get("api_key"):
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+    else:
+        openai.api_key = kwargs.get("api_key")
+
+    model = kwargs["model"]
+
+    if model == "code-davinci-edit-001" or model == "text-davinci-edit-001":
+        # Note: can put if prompt is None check here, then use args[1]
+        response = openai.Edit.create(
+            model=kwargs["model"],
+            input=kwargs["prompt"],
+            instruction=kwargs["instruction"],
+            temperature=kwargs["temperature"],
+            top_p=kwargs["top_p"],
+        )
+
+    if model == "code-davinci-002" or model == "code-davinci-001":
+        response = openai.Completion.create(
+            model=kwargs["model"],
+            prompt=kwargs["prompt"],
+            temperature=kwargs["temperature"],
+            max_tokens=kwargs["max_tokens"],
+            top_p=kwargs["top_p"],
+            frequency_penalty=kwargs["frequency_penalty"],
+            presence_penalty=kwargs["presence_penalty"],
+            stop=kwargs["stop"],
+        )
+
+    # print(response)
+    output = response.choices[0].text
+    return output
+
+
+def get_args():
+    args = sys.argv
+
+    default_dict = {}
+
+    # if -m arg is passed, set the model to the value of the arg
+    if "-m" in args or "--model" in args:
+        model = args[args.index("-m") + 1]
+        default_dict["model"] = model
+
+    else:
+        model = None
+        # model = "code-davinci-edit-001"
+        default_dict["model"] = model
+
+    if model is None:
+        model = "code-davinci-edit-001"
+        default_dict = {
+            "model": "code-davinci-edit-001",
+            "prompt": None,
+            "instruction": None,
+            "temperature": 0,
+            "top_p": 1,
+        }
+        default_dict["model"] = model
+        if default_dict["prompt"] is None:
+            prompt = args[1]
+            default_dict["prompt"] = args[1]
+        if default_dict["instruction"] is None:
+            instruction = args[2]
+            default_dict["instruction"] = args[2]
+
+    elif model == "code-davinci-edit-001":
+        default_dict = {
+            "model": "code-davinci-edit-001",
+            "prompt": None,
+            "instruction": None,
+            "temperature": 0,
+            "top_p": 1,
+        }
+
+    elif model == "text-davinci-edit-001":
+        default_dict = {
+            "model": None,
+            "prompt": None,
+            "instruction": None,
+            "temperature": 0.7,
+            "top_p": 1,
+        }
+        default_dict["model"] = model
+
+    elif model == "code-davinci-001" or model == "code-davinci-002":
+        default_dict = {
+            "model": None,
+            "prompt": None,
+            "temperature": 0,
+            "max_tokens": 182,
+            "top_p": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0,
+            "stop": ["###"],
+        }
+        default_dict["model"] = model
+
+    # if -i arg is passed, set the instruction to the value of the arg
+    if "-i" in args or "--instruction" in args:
+        instruction = args[args.index("-i") + 1]
+        default_dict["instruction"] = instruction
+    else:  # and model == "code-davinci-edit-001": or model == "text-davinci-edit-001":
+        instruction = args[2]
+        default_dict["instruction"] = instruction
+
+    # if -p arg is passed, set the prompt to the value of the arg
+    if "-p" in args or "--prompt" in args or "--input" in args:
+        prompt = args[args.index("-p") + 1]
+        default_dict["prompt"] = prompt
+    else:
+        prompt = args[1]
+        default_dict["prompt"] = prompt
+
+    # if --temperature arg is passed, set the temperature to the value of the arg
+    if "--temperature" in args:
+        temperature = args[args.index("--temperature") + 1]
+        default_dict["temperature"] = temperature
+
+    # if --max_tokens arg is passed, set the max_tokens to the value of the arg
+    if "--max_tokens" in args:
+        max_tokens = args[args.index("--max_tokens") + 1]
+        default_dict["max_tokens"] = max_tokens
+
+    # if --top_p arg is passed, set the top_p to the value of the arg
+    if "--top_p" in args:
+        top_p = args[args.index("--top_p") + 1]
+        default_dict["top_p"] = top_p
+
+    # if --frequency_penalty arg is passed, set the frequency_penalty to the value of the arg
+    if "--frequency_penalty" in args:
+        frequency_penalty = args[args.index("--frequency_penalty") + 1]
+        default_dict["frequency_penalty"] = frequency_penalty
+
+    # if --presence_penalty arg is passed, set the presence_penalty to the value of the arg
+    if "--presence_penalty" in args:
+        presence_penalty = args[args.index("--presence_penalty") + 1]
+        default_dict["presence_penalty"] = presence_penalty
+
+    return default_dict
+
+
+def cli():
+    default_dict = get_args()
+    output = openai_api(**default_dict)
+    print(output, default_dict)
+
+
+if __name__ == "__main__":
+    cli()
