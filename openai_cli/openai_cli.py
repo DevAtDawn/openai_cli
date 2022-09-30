@@ -4,7 +4,6 @@ import sys
 
 # export OPENAI_API_KEY='xxx'
 
-
 def openai_api(**kwargs):
 
     # if 'api_key' in kwargs and 'api_key' is not None:
@@ -47,9 +46,18 @@ def openai_api(**kwargs):
 
 
 def get_args():
-    args = sys.argv
 
     default_dict = {}
+
+    if not sys.stdin.isatty():
+        stdin = sys.stdin.read()
+        default_dict["stdin"] = stdin
+    else:
+        stdin = None
+        default_dict["stdin"] = None
+
+    args = sys.argv
+
 
     # if -m arg is passed, set the model to the value of the arg
     if "-m" in args or "--model" in args:
@@ -75,8 +83,18 @@ def get_args():
             prompt = args[1]
             default_dict["prompt"] = args[1]
         if default_dict["instruction"] is None:
-            instruction = args[2]
-            default_dict["instruction"] = args[2]
+            # if theres 2 args, set instruction to the 2nd arg
+            # print(len(args))
+            if len(args) == 3:
+                instruction = args[2]
+                default_dict["instruction"] = args[2]
+            #elif only 1 arg passed and stdin is not empty, set instruction to arg1
+            elif len(args) == 2 and stdin is not None:
+                instruction = args[1]
+                default_dict["instruction"] = args[1]
+            else:
+                instruction = args[2]
+                default_dict["instruction"] = instruction
 
     elif model == "code-davinci-edit-001":
         default_dict = {
@@ -114,6 +132,13 @@ def get_args():
     if "-i" in args or "--instruction" in args:
         instruction = args[args.index("-i") + 1]
         default_dict["instruction"] = instruction
+    elif len(args) == 3:
+        instruction = args[2]
+        default_dict["instruction"] = args[2]
+    #elif only 1 arg passed and stdin is not empty, set instruction to arg1
+    elif len(args) == 2 and stdin is not None:
+        instruction = args[1]
+        default_dict["instruction"] = args[1]
     else:  # and model == "code-davinci-edit-001": or model == "text-davinci-edit-001":
         instruction = args[2]
         default_dict["instruction"] = instruction
@@ -127,11 +152,18 @@ def get_args():
         with open(file_path, "r") as f:
             prompt = f.read()
         default_dict["prompt"] = prompt
+    elif stdin is not None:
+        prompt = stdin
+        default_dict["prompt"] = prompt
+        # if only on 1 arg pass and stdin is not None, set prompt to stdin, set instruction to arg1, also allow passing of args without ""
+        if len(args) == 2:
+            instruction = args[1]
+            default_dict["instruction"] = instruction
     else:
         prompt = args[1]
         default_dict["prompt"] = prompt
 
-    # if --temperature arg is passed, set the temperature to the value of the arg
+    # if --temperature arg ispassed, set the temperature to the value of the arg
     if "--temperature" in args:
         temperature = args[args.index("--temperature") + 1]
         default_dict["temperature"] = temperature
@@ -156,8 +188,19 @@ def get_args():
         presence_penalty = args[args.index("--presence_penalty") + 1]
         default_dict["presence_penalty"] = presence_penalty
 
-    return default_dict
+    # if --pipe arg is passed, set the stdin to the value of the arg
+    if "--pipe" in args:
+        # pipe = args[args.index("--pipe") + 1]
+        # default_dict["pipe"] = pipe
+        lastline = stdin.splitlines()
+        lastline = [x for x in lastline if x]
+        lastline = lastline[-1]
+        instruction = lastline
+        default_dict["instruction"] = lastline
+        prompt = stdin.rsplit(lastline, 1)[0]
+        default_dict["prompt"] = prompt
 
+    return default_dict
 
 def cli():
     default_dict = get_args()
@@ -169,3 +212,4 @@ def cli():
 
 if __name__ == "__main__":
     cli()
+ 
