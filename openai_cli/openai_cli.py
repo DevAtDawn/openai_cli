@@ -199,6 +199,19 @@ def get_args():
         default_dict["instruction"] = lastline
         prompt = stdin.rsplit(lastline, 1)[0]
         default_dict["prompt"] = prompt
+       
+    # if --fpi arg is passed, set the stdin to the value of the arg
+    if "-fpi" in args or "--fpi" in args:
+        file_path = args[args.index("-fpi") + 1]
+        with open(file_path, "r") as f:
+            data = f.read()
+            lastline = data.splitlines()
+            lastline = [x for x in lastline if x]
+            lastline = lastline[-1]
+            instruction = lastline
+            default_dict["instruction"] = lastline
+            prompt = data.rsplit(lastline, 1)[0]
+            default_dict["prompt"] = prompt
 
     return default_dict
 
