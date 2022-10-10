@@ -1,8 +1,34 @@
 import os
 import openai
 import sys
+import getpass
 
 # export OPENAI_API_KEY='xxx'
+
+def read_config_file():
+    # read from config file
+    config_file = os.path.join(os.path.expanduser("~"), ".openai_cli")
+    if os.path.exists(config_file):
+        with open(config_file, "r") as f:
+            oaikey = f.read()
+            return oaikey
+    else:
+    # if dir aqnd file does not exist create it
+        if not os.path.exists(os.path.dirname(config_file)):
+            try:
+                os.makedirs(os.path.dirname(config_file))
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise
+        # create file
+        with open(config_file, "w") as f:
+            f.write("")
+        return None
+
+def save_config_file(oaikey):
+    config_file = os.path.join(os.path.expanduser("~"), ".openai_cli")
+    with open(config_file, "w") as f:
+        f.write(oaikey)
 
 def openai_api(**kwargs):
 
@@ -10,11 +36,25 @@ def openai_api(**kwargs):
     #     openai.api_key = kwargs.get('api_key')
     # else:
     #     openai.api_key = os.getenv("OPENAI_API_KEY")
+    oaikey = kwargs.get("api_key")
 
-    if not kwargs.get("api_key"):
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-    else:
-        openai.api_key = kwargs.get("api_key")
+    # if oaikey is empty or None
+    if not oaikey:
+        oaikey = os.getenv("OPENAI_API_KEY")
+
+    # if oaikey is empty or None
+    if not oaikey:
+        # read from config file
+        oaikey = read_config_file()
+    # if oaikey is empty or None after reading from config file read from user input
+    if not oaikey:
+        # pass
+        # oaikey = input("Enter OpenAI API Key: ")
+        oaikey = getpass.getpass("Enter OpenAI API Key: ")
+        # save to config file
+        save_config_file(oaikey)
+
+    openai.api_key = oaikey
 
     model = kwargs["model"]
 
@@ -124,7 +164,8 @@ def get_args():
             "top_p": 1,
             "frequency_penalty": 0,
             "presence_penalty": 0,
-            "stop": ["###"],
+            # "stop": ["###"],
+            "stop": None,
         }
         default_dict["model"] = model
 
@@ -166,12 +207,12 @@ def get_args():
     # if --temperature arg ispassed, set the temperature to the value of the arg
     if "--temperature" in args:
         temperature = args[args.index("--temperature") + 1]
-        default_dict["temperature"] = temperature
+        default_dict["temperature"] = int(temperature)
 
     # if --max_tokens arg is passed, set the max_tokens to the value of the arg
     if "--max_tokens" in args:
         max_tokens = args[args.index("--max_tokens") + 1]
-        default_dict["max_tokens"] = max_tokens
+        default_dict["max_tokens"] = int(max_tokens)
 
     # if --top_p arg is passed, set the top_p to the value of the arg
     if "--top_p" in args:
@@ -181,12 +222,12 @@ def get_args():
     # if --frequency_penalty arg is passed, set the frequency_penalty to the value of the arg
     if "--frequency_penalty" in args:
         frequency_penalty = args[args.index("--frequency_penalty") + 1]
-        default_dict["frequency_penalty"] = frequency_penalty
+        default_dict["frequency_penalty"] = int(frequency_penalty)
 
     # if --presence_penalty arg is passed, set the presence_penalty to the value of the arg
     if "--presence_penalty" in args:
         presence_penalty = args[args.index("--presence_penalty") + 1]
-        default_dict["presence_penalty"] = presence_penalty
+        default_dict["presence_penalty"] = int(presence_penalty)
 
     # if --pipe arg is passed, set the stdin to the value of the arg
     if "--pipe" in args:
@@ -213,6 +254,10 @@ def get_args():
             prompt = data.rsplit(lastline, 1)[0]
             default_dict["prompt"] = prompt
 
+    if "--stop" in args:
+        stop = args[args.index("--stop") + 1]
+        default_dict["stop"] = stop
+        
     return default_dict
 
 def cli():
